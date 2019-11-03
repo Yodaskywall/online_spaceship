@@ -21,8 +21,6 @@ class Bullet:
         loaded_sprite = pygame.image.load(sprite)
         win.blit(loaded_sprite, (self.x, self.y))
 
-
-
     def check_hit(self, game, clientId):
         spaceship = game.spaceships[clientId]
         if (self.y + BDIM[1] > spaceship.y + DIM[1] // 2 and spaceship.x - BDIM[0] <= self.x <= spaceship.x + DIM[0] and self.id != spaceship.id):

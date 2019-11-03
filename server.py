@@ -21,24 +21,28 @@ except socket.error as e:
 s.listen()
 print("Waiting for a connection, Server Started.")
 
-game = Game()
+games = {
+    0: Game(0)
+}
 
 clock = pygame.time.Clock()
 
 
-def main_loop():
+def main_loop(gameId):
     while True:
         clock.tick(60)
         try:
-            for bullet in game.bullets:
+            for bullet in games[gameId].bullets:
                 bullet.update("server")
                 if not -30 <= bullet.y <= 900:
-                    game.bullets.remove(bullet)
+                    games[gameId].bullets.remove(bullet)
         except Exception as e:
             print(e)
 
 
-def threaded_client(conn, clientId):
+def threaded_client(conn, clientId, gameId):
+    games[gameId].connected[clientId] = True
+    game = games[gameId]
     pickle_send(conn, [clientId, game])
 
     connected = True
@@ -52,52 +56,66 @@ def threaded_client(conn, clientId):
                     pass
             except:
                 pass
-            game.spaceships[data.id] = data
+            games[gameId].spaceships[data.id] = data
+
+        elif data == "Waiting":
+            pass
+
+        elif data == "Lost":
+            games[gameId].lost[clientId] = True
+            reply = games[gameId]
+            pickle_send(conn, reply)
+            print(f"Connection with {clientId} terminated.")
+            conn.close()
+            connected = False
+            break
+
 
         else:
             bullet = data
             bullet.x = (1200 - bullet.x - 10)
             bullet.y = (900 - bullet.y - 30)
-            game.bullets.append(bullet)
+            games[gameId].bullets.append(bullet)
 
         to_remove = []
 
         for bullet in game.bullets:
-            a = bullet.check_hit(game, clientId)
-            if a is not None:
-                game.spaceships[clientId] = a
+            sp = bullet.check_hit(game, clientId)
+            if sp is not None:
+                games[gameId].spaceships[clientId] = sp
                 to_remove.append(bullet)
 
         for bullet in to_remove:
-            game.bullets.remove(bullet)
+            games[gameId].bullets.remove(bullet)
 
-
-
-        reply = game
+        reply = games[gameId]
         pickle_send(conn, reply)
 
+        connected = not game.finished()
+        if not connected:
+            conn.close()
+            print(f"Connection with {clientId} terminated.")
 
 
 
-serverId = 0
+gameId = 0
 clientId = 0
-
-
-
 
 
 while True:
     conn, address = s.accept()
     print(f"Connected to {address}.")
 
-    start_new_thread(threaded_client, (conn, clientId))
-    print(clientId)
+    start_new_thread(threaded_client, (conn, clientId, gameId))
+    print(f"{clientId} connected to server {gameId}")
     if clientId == 0:
-        start_new_thread(main_loop, ())
+        start_new_thread(main_loop, (gameId,))
 
     clientId += 1
 
     if clientId == 2:
         clientId = 0
+        gameId += 1
+        games[gameId] = Game(gameId)
 
 
