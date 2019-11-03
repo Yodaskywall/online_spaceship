@@ -36,8 +36,6 @@ class Bullet:
             self.y += self.speed
 
 
-
-
 class SpaceShip:
     def __init__(self, p, clientId):
         self.id = clientId

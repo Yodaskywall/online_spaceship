@@ -70,7 +70,6 @@ def threaded_client(conn, clientId, gameId):
             connected = False
             break
 
-
         else:
             bullet = data
             bullet.x = (1200 - bullet.x - 10)
@@ -97,7 +96,6 @@ def threaded_client(conn, clientId, gameId):
             print(f"Connection with {clientId} terminated.")
 
 
-
 gameId = 0
 clientId = 0
 
@@ -107,13 +105,14 @@ while True:
     print(f"Connected to {address}.")
 
     start_new_thread(threaded_client, (conn, clientId, gameId))
-    print(f"{clientId} connected to server {gameId}")
+    print(f"Player {clientId} connected to server {gameId}")
     if clientId == 0:
         start_new_thread(main_loop, (gameId,))
 
     clientId += 1
 
     if clientId == 2:
+        print("New Game Created.")
         clientId = 0
         gameId += 1
         games[gameId] = Game(gameId)
